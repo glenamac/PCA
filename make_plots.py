@@ -1,3 +1,4 @@
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from helper import safe_read_csv
@@ -20,16 +21,6 @@ def plot_waittime_by_partition(df, filename="waittime_by_partition.png", log_sca
     plt.title('WaitTime by Partition')
     plt.suptitle('')
     plt.ylabel('WaitTime')
-    plt.tight_layout()
-    plt.savefig(filename)
-    plt.clf()
-
-def plot_runtime_vs_waittime(df, filename="runtime_vs_waittime.png", log_scale=True):
-    ax = df.plot.scatter(x='RunTime', y='WaitTime', alpha=0.1)
-    if log_scale:
-        ax.set_xscale('log')
-        ax.set_yscale('log')
-    plt.title('RunTime vs WaitTime')
     plt.tight_layout()
     plt.savefig(filename)
     plt.clf()
@@ -65,24 +56,32 @@ def plot_pairplot(df, numeric_cols, filename="pairplot_numeric.png", sample_size
     plt.savefig(filename)
     plt.clf()
 
-def plot_runtime_vs_waittime2(df, filename="runtime_vs_waittime.png", log_scale=True, bins=100):
-    x = df['RunTime'].dropna()
-    y = df['WaitTime'].dropna()
+def plot_runtime_vs_waittime(df, filename="runtime_vs_waittime.png", log_scale=True, bins=100):
+    x = df['RunTime'].dropna()/3600.
+    y = df['WaitTime'].dropna()/3600.
+    x, y = x.align(y, join='inner')
 
-    x, y = x.align(y, join='inner')  # ensure same index
+    # Filter zeros and negatives for log scale
+    mask = (x > 0) & (y > 0)
+    x = x[mask]
+    y = y[mask]
+
+    # Define log-spaced bins
+    xbins = np.logspace(np.log10(x.min()), np.log10(x.max()), bins)
+    ybins = np.logspace(np.log10(y.min()), np.log10(y.max()), bins)
 
     plt.figure(figsize=(8, 6))
-    plt.hist2d(x, y, bins=bins, norm=plt.matplotlib.colors.LogNorm() if log_scale else None, cmap='viridis')
+    plt.hist2d(x, y, bins=[xbins, ybins], cmap='viridis', norm=plt.matplotlib.colors.LogNorm())
     plt.colorbar(label='Job Count')
-    plt.xlabel('RunTime')
-    plt.ylabel('WaitTime')
-    plt.title('RunTime vs WaitTime (Heatmap)')
-    if log_scale:
-        plt.xscale('log')
-        plt.yscale('log')
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.xlabel('RunTime [hr]')
+    plt.ylabel('WaitTime [hr]')
+    plt.title('RunTime vs WaitTime')
     plt.tight_layout()
     plt.savefig(filename)
     plt.clf()
+
 
 
 filename = "fy2025_output.txt"
@@ -100,7 +99,6 @@ if __name__ == "__main__":
 
     plot_waittime_hist(df)
     plot_waittime_by_partition(df)
-    plot_waittime_by_partition2(df)
     plot_runtime_vs_waittime(df)
     plot_job_counts_by_partition(df)
 
