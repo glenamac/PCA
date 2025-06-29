@@ -2,11 +2,12 @@ import chardet
 import csv
 import pandas as pd
 
+#Adjust num_bytes
 def detect_encoding(file_path, num_bytes=10000):
     with open(file_path, 'rb') as f:
         raw = f.read(num_bytes)
     result = chardet.detect(raw)
-    print(f"Detected encoding: {result['encoding']} ({round(result['confidence']*100)}% confidence)")
+    print(f"Detected encoding: {result['encoding']} ({100*round(result['confidence'])}% confidence)")
     return result['encoding']
 
 def validate_field_count(file_path, expected_fields, encoding):
@@ -18,7 +19,7 @@ def validate_field_count(file_path, expected_fields, encoding):
     if expected_fields in unique_lengths and len(unique_lengths) == 1:
         print(f"All rows have {expected_fields} fields.")
     else:
-        print(f"WARNING: Row lengths may be inconsistent.")
+        exit(f"WARNING: Row lengths not consistent.")
     return unique_lengths
 
 def safe_read_csv(file_path, columns, expected_fields):

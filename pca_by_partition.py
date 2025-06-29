@@ -10,10 +10,28 @@ from helper import safe_read_csv
 filename = "fy2025_output.txt"
 
 columns = [
-    "SubmitTime","StartTime","EndTime","RunTime","WaitTime","netid","groupName","JobID","JobName","NodeList","NNodes","ReqCPUS","CPUTimeRAW","DerivedExitCode","Timelimit", "State", "Priority", "Partition", "NCPUS", "longGroupName", "schoolName"
+    "SubmitTime","StartTime","EndTime","RunTime","WaitTime","netid","groupName","JobID","JobName",
+    "NodeList","NNodes","ReqCPUS","CPUTimeRAW","DerivedExitCode","Timelimit", "State", "Priority",
+    "Partition", "NCPUS", "longGroupName", "schoolName"
 ]
 masked_fields = ['WaitTime','SubmitTime', 'StartTime', 'EndTime','CPUTimeRAW', 'DerivedExitCode', 'State','longGroupName']
 expected_col_count = len(columns)
+
+def get_partition_pca(df, partition, masked_fields):
+    df_part = df[df['Partition'] == partition]
+    df_num = df_part.select_dtypes(include='number').dropna()
+
+    if 'WaitTime' not in df_num.columns or df_num.shape[0] < 5:
+        return None, None, None
+
+    X = df_num.drop(columns=[col for col in masked_fields if col in df_num.columns])
+#    y = df_num['WaitTime']/3600.
+    y = df_num['WaitTime']
+
+    X_scaled = StandardScaler().fit_transform(X)
+    pca = PCA()
+    X_pca = pca.fit_transform(X_scaled)
+    return X_pca, y, pca
 
 if __name__ == "__main__":
     df = safe_read_csv(filename, columns, expected_col_count)
@@ -28,17 +46,10 @@ if __name__ == "__main__":
     writer.writerow(["Partition", "Count", "ExplainedVarPC1", "ExplainedVarPC2", "ExplainedVarPC3", "R-Squared"])
 
     for part in partitions:
-        df_part = df[df['Partition'] == part]
-        df_num = df_part.select_dtypes(include='number').dropna()
-
-        if 'WaitTime' not in df_num.columns or df_num.shape[0] < 5:
+        X_pca, y, pca = get_partition_pca(df, part, masked_fields)
+        if X_pca is None:
             continue
 
-        X = df_num.drop(columns=[col for col in masked_fields if col in df_num.columns])
-        y = df_num['WaitTime']
-        X_scaled = StandardScaler().fit_transform(X)
-        pca = PCA()
-        X_pca = pca.fit_transform(X_scaled)
         explained = pca.explained_variance_ratio_.cumsum()
 
         if X_pca.shape[1] >= 4:
@@ -47,5 +58,5 @@ if __name__ == "__main__":
         else:
             r2 = ""
 
-        writer.writerow([part, df_num.shape[0]] + list(explained[:3]) + [r2])
+        writer.writerow([part, X_pca.shape[0]] + list(explained[:3]) + [r2])
 
