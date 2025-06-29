@@ -82,7 +82,57 @@ def plot_runtime_vs_waittime(df, filename="runtime_vs_waittime.png", log_scale=T
     plt.savefig(filename)
     plt.clf()
 
+def plot_timelimit_vs_waittime(df, filename="timelimit_vs_waittime.png", log_scale=True, bins=30):
+    x = df['WaitTime'].dropna()/3600.
+    y = df['Timelimit'].dropna()/60.
+    x, y = x.align(y, join='inner')
 
+    # Filter zeros and negatives for log scale
+    mask = (x > 0) & (y > 0)
+    x = x[mask]
+    y = y[mask]
+
+    # Define log-spaced bins
+    xbins = np.logspace(np.log10(x.min()), np.log10(x.max()), bins)
+    ybins = np.logspace(np.log10(y.min()), np.log10(y.max()), bins)
+
+    plt.figure(figsize=(8, 6))
+    plt.hist2d(x, y, bins=[xbins, ybins], cmap='viridis', norm=plt.matplotlib.colors.LogNorm())
+    plt.colorbar(label='Job Count')
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.xlabel('Timelimit [hr]')
+    plt.ylabel('WaitTime [hr]')
+    plt.title('Timelimit vs WaitTime')
+    plt.tight_layout()
+    plt.savefig(filename)
+    plt.clf()
+
+def plot_timelimit_vs_runtime(df, filename="timelimit_vs_runtime.png", log_scale=True, bins=30):
+    x = df['RunTime'].dropna()/3600.
+    y = df['Timelimit'].dropna()/60.
+    x, y = x.align(y, join='inner')
+
+    # Filter zeros and negatives for log scale
+    mask = (x > 0) & (y > 0)
+    x = x[mask]
+    y = y[mask]
+
+    # Define log-spaced bins
+    xbins = np.logspace(np.log10(x.min()), np.log10(x.max()), bins)
+    ybins = np.logspace(np.log10(y.min()), np.log10(y.max()), bins)
+
+    plt.figure(figsize=(8, 6))
+    plt.hist2d(x, y, bins=[xbins, ybins], cmap='viridis', norm=plt.matplotlib.colors.LogNorm())
+    plt.colorbar(label='Job Count')
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.xlabel('Timelimit [hr]')
+    plt.ylabel('RunTime [hr]')
+    plt.title('Timelimit vs RunTime')
+    plt.tight_layout()
+    plt.savefig(filename)
+    plt.clf()
 
 filename = "fy2025_output.txt"
 
@@ -96,13 +146,15 @@ expected_col_count = len(columns)
 
 if __name__ == "__main__":
     df = safe_read_csv(filename, columns, expected_col_count)
+    print(df.columns.tolist())
 
     plot_waittime_hist(df)
     plot_waittime_by_partition(df)
     plot_runtime_vs_waittime(df)
     plot_job_counts_by_partition(df)
-
+    plot_timelimit_vs_waittime(df)
+    plot_timelimit_vs_runtime(df)
     numeric_cols = ['WaitTime', 'RunTime', 'NCPUS', 'ReqCPUS', 'NNodes', 'Priority', 'Timelimit']
     plot_corr_heatmap(df, numeric_cols)
 #    plot_pairplot(df, numeric_cols)
-
+   
