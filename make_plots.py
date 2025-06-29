@@ -104,5 +104,5 @@ if __name__ == "__main__":
 
     numeric_cols = ['WaitTime', 'RunTime', 'NCPUS', 'ReqCPUS', 'NNodes', 'Priority', 'Timelimit']
     plot_corr_heatmap(df, numeric_cols)
-    plot_pairplot(df, numeric_cols)
+#    plot_pairplot(df, numeric_cols)
 
